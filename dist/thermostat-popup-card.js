@@ -2532,7 +2532,32 @@ function hass() {
     return document.querySelector('home-assistant').hass;
 
   return undefined;
+}function lovelace_view() {
+  var root = document.querySelector("hc-main");
+  if(root) {
+    root = root && root.shadowRoot;
+    root = root && root.querySelector("hc-lovelace");
+    root = root && root.shadowRoot;
+    root = root && root.querySelector("hui-view") || root.querySelector("hui-panel-view");
+    return root;
+  }
+
+  root = document.querySelector("home-assistant");
+  root = root && root.shadowRoot;
+  root = root && root.querySelector("home-assistant-main");
+  root = root && root.shadowRoot;
+  root = root && root.querySelector("app-drawer-layout partial-panel-resolver");
+  root = root && root.shadowRoot || root;
+  root = root && root.querySelector("ha-panel-lovelace");
+  root = root && root.shadowRoot;
+  root = root && root.querySelector("hui-root");
+  root = root && root.shadowRoot;
+  root = root && root.querySelector("ha-app-layout");
+  root = root && root.querySelector("#view");
+  root = root && root.firstElementChild;
+  return root;
 }
+
 async function load_lovelace() {
   if(customElements.get("hui-view")) return true;
 
@@ -2566,6 +2591,8 @@ async function _selectTree(root, path, all=false) {
   if(typeof(path) === "string") {
     path = path.split(/(\$| )/);
   }
+  if(path[path.length-1] === "")
+     path.pop();
   for(const [i, p] of path.entries()) {
     if(!p.trim().length) continue;
     if(!el) return null;
@@ -2598,6 +2625,21 @@ async function selectTree(root, path, all=false, timeout=10000) {
   });
 }
 
+function fireEvent(ev, detail, entity=null) {
+  ev = new Event(ev, {
+    bubbles: true,
+    cancelable: false,
+    composed: true,
+  });
+  ev.detail = detail || {};
+  if(entity) {
+    entity.dispatchEvent(ev);
+  } else {
+    var root = lovelace_view();
+    if (root) root.dispatchEvent(ev);
+  }
+}
+
 let helpers = window.cardHelpers;
 const helperPromise = new Promise(async (resolve, reject) => {
   if(helpers) resolve();
@@ -2623,6 +2665,7 @@ const helperPromise = new Promise(async (resolve, reject) => {
 
 async function closePopUp() {
   const root = document.querySelector("home-assistant") || document.querySelector("hc-root");
+  fireEvent("hass-more-info", {entityId: "."}, root);
   const el = await selectTree(root, "$ card-tools-popup");
 
   if(el)
@@ -3074,6 +3117,12 @@ class ThermostatPopupCard extends LitElement {
 
                 <div id="slider-center">
                   <div class="values">
+                    <div class="value">
+                      ${currentTemp}&#176;
+                    </div>
+                    <div class="setpoint">
+                      ${targetTemp.toFixed(1)}&#176;
+                    </div>
                     <div class="action">
                       ${stateObj.attributes.hvac_action
             ? this.hass.localize(`state_attributes.climate.hvac_action.${stateObj.attributes.hvac_action}`)
@@ -3086,38 +3135,41 @@ class ThermostatPopupCard extends LitElement {
                             `
             : ""}
                     </div>
-                    <div class="value">
-                      ${!this._setTemp
-            ? ""
-            : Array.isArray(this._setTemp)
-                ? _stepSize === 1
-                    ? svg `
-                                ${this._setTemp[0].toFixed()}&#176; -
-                                ${this._setTemp[1].toFixed()}&#176;
-                                `
-                    : svg `
-                                ${this._setTemp[0].toFixed(1)}&#176; -
-                                ${this._setTemp[1].toFixed(1)}&#176;
-                                `
-                : _stepSize === 1
-                    ? svg `
-                                ${this._setTemp.toFixed()}&#176;
-                                `
-                    : svg `
-                                ${this._setTemp.toFixed(1)}&#176;
-                                `}
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
             <div id="modes">
-              ${(stateObj.attributes.hvac_modes || [])
-            .concat()
-            .sort(this._compareClimateHvacModes)
-            .map((modeItem) => this._renderIcon(modeItem, mode))}
+
+            ${this.config.moon_entity
+            ? html `
+            <ha-icon-button
+            class="${this.checkModeActive('moon') ? 'moon active' : 'moon'}"
+            @click=${() => { this.modeClick('moon'); }}
+            icon="hass:power-sleep"
+            tabindex="0"
+          ></ha-icon-button>
+          ` : ''}
+
+            ${this.config.sun_entity
+            ? html `
+          <ha-icon-button
+          class="${this.checkModeActive('sun') ? 'sun active' : 'sun'}"
+          @click=${() => { this.modeClick('sun'); }}
+          icon="hass:white-balance-sunny"
+          tabindex="0"
+        ></ha-icon-button>
+              ` : ''}
+
             </div>
-            ${this.settings ? html `<button class="settings-btn ${this.settingsPosition}${fullscreen === true ? ' fullscreen' : ''}" @click="${() => this._openSettings()}">${this.config.settings.openButton ? this.config.settings.openButton : 'Settings'}</button>` : html ``}
+            ${this.settings ? html `
+            <ha-icon-button
+              icon="hass:arrow-right"
+              class="moreInfoButton"
+              @click=${this._openSettings}
+            >
+            </ha-icon-button>
+            ` : html ``}
           </div>
           ${this.settings ? html `
             <div id="settings" class="settings-inner" @click="${e => this._close(e)}">
@@ -3138,7 +3190,12 @@ class ThermostatPopupCard extends LitElement {
                   --primary-text-color: white !important;"
                 ></more-info-controls>
               `}
-              <button class="settings-btn ${this.settingsPosition}${fullscreen === true ? ' fullscreen' : ''}" @click="${() => this._closeSettings()}">${this.config.settings.closeButton ? this.config.settings.closeButton : 'Close'}</button>
+              <ha-icon-button
+                icon="hass:arrow-left"
+                class="moreInfoButton"
+                @click=${this._closeSettings}
+              >
+              </ha-icon-button>
             </div>
           ` : html ``}
         </div>
@@ -3190,24 +3247,27 @@ class ThermostatPopupCard extends LitElement {
         this.shadowRoot.getElementById('settings').classList.remove("on");
         this.shadowRoot.getElementById('popup').classList.remove("off");
     }
-    _renderIcon(mode, currentMode) {
-        if (!this.modeIcons[mode]) {
-            return html ``;
-        }
-        return html `
-      <ha-icon-button
-        class="${classMap({ "selected-icon": currentMode === mode })}"
-        .mode="${mode}"
-        .icon="${this.modeIcons[mode]}"
-        @click="${this._handleModeClick}"
-        tabindex="0"
-      ></ha-icon-button>
-    `;
+    checkModeActive(mode) {
+        const stateObj = this.hass.states[this.config.entity];
+        const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
+        if (!entity)
+            return false;
+        const state = this.hass.states[entity];
+        if (!state || !stateObj.attributes.temperature)
+            return false;
+        const res = Number(stateObj.attributes.temperature) == Number(state.state);
+        return res;
     }
-    _handleModeClick(e) {
-        this.hass.callService("climate", "set_hvac_mode", {
+    modeClick(mode) {
+        if (this.checkModeActive(mode))
+            return;
+        const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
+        if (!entity)
+            return;
+        const state = this.hass.states[entity];
+        this.hass.callService("climate", "set_temperature", {
             entity_id: this.config.entity,
-            hvac_mode: e.currentTarget.mode,
+            temperature: Number(state.state),
         });
     }
     _getSetTemp(stateObj) {
@@ -3239,29 +3299,16 @@ class ThermostatPopupCard extends LitElement {
         else {
             this._setTemp = e.detail.value;
         }
+        const element = this.shadowRoot.querySelector(".setpoint");
+        element.childNodes[1].textContent = this._setTemp.toFixed(1);
+        //element.innerHTML = `${this._setTemp.toFixed(1)}&#176;`;
     }
     _setTemperature(e) {
         const stateObj = this.hass.states[this.config.entity];
-        if (e.detail.low) {
-            this.hass.callService("climate", "set_temperature", {
-                entity_id: this.config.entity,
-                target_temp_low: e.detail.low,
-                target_temp_high: stateObj.attributes.target_temp_high,
-            });
-        }
-        else if (e.detail.high) {
-            this.hass.callService("climate", "set_temperature", {
-                entity_id: this.config.entity,
-                target_temp_low: stateObj.attributes.target_temp_low,
-                target_temp_high: e.detail.high,
-            });
-        }
-        else {
-            this.hass.callService("climate", "set_temperature", {
-                entity_id: this.config.entity,
-                temperature: e.detail.value,
-            });
-        }
+        this.hass.callService("climate", "set_temperature", {
+            entity_id: this.config.entity,
+            temperature: e.detail.value,
+        });
     }
     setConfig(config) {
         if (!config.entity) {
@@ -3287,12 +3334,14 @@ class ThermostatPopupCard extends LitElement {
             --unknown-color: #bac;
         }
         .popup-wrapper {
-          margin-top:64px;
-          position: absolute;
+          margin-top: 20px;
+          position: relative;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
+          max-width: 100%;
+          overflow: hidden;
         }
         .popup-inner {
           height: 100%;
@@ -3301,6 +3350,7 @@ class ThermostatPopupCard extends LitElement {
           align-items: center;
           justify-content: center;
           flex-direction: column;
+          margin-top: 0px;
         }
         .popup-inner.off {
           display:none;
@@ -3319,28 +3369,14 @@ class ThermostatPopupCard extends LitElement {
         #settings.on {
           display:flex;
         }
-        .settings-btn {
-          position:absolute;
-          right:30px;
-          background-color: #7f8082;
-          color: #FFF;
-          border: 0;
-          padding: 5px 20px;
-          border-radius: 10px;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .settings-btn.bottom {
-          bottom:15px;
-        }
-        .settings-btn.top {
-          top: 25px;
-        }
-        .settings-btn.bottom.fullscreen {
-          margin:0;
+        .moreInfoButton {
+          position: fixed;
+          right: 12px;
+          bottom: 12px;
+          color: var(--text-primary-color);
         }
         .fullscreen {
-          margin-top:-64px;
+          margin-top:0px;
         }
         .info {
           display:flex;
@@ -3479,24 +3515,47 @@ class ThermostatPopupCard extends LitElement {
           height:100%;
           width:100%;
         }
+        .values .value {
+          color:#FFF;
+          font-size:60px;
+          line-height: 60px;
+          margin-top: 30px;
+        }
+        .values .setpoint {
+          color:#FFF;
+          font-size:30px;
+          line-height: 30px;
+          margin-top: 10px;
+        }
         .values .action {
           color:#f4b941;
           font-size:10px;
           text-transform:uppercase;
         }
-        .values .value {
-          color:#FFF;
-          font-size:60px;
-          line-height: 60px;
+        #modes {
+          margin-top: -30px;
+          margin-bottom: 20px;
         }
-        
         #modes > * {
           color: var(--disabled-text-color);
           cursor: pointer;
           display: inline-block;
+          --mdc-icon-size: 28px;
         }
-        #modes .selected-icon {
-          color: var(--mode-color);
+
+        #modes .moon {
+          color: var(--disabled-text-color);
+        }
+
+        #modes .sun {
+          color: var(--disabled-text-color);
+        }
+
+        #modes .moon.active {
+          color: deepskyblue;
+        }
+        #modes .sun.active {
+          color: gold;
         }
         text {
           color: var(--primary-text-color);
@@ -3753,7 +3812,7 @@ class CustomRoundSlider extends LitElement {
         <path
           id=${id}
           class="handle"
-          d=${this._renderArc(this._value2angle(id != 'low' ? this[id] - 0.35 : this[id] + 0.35), this._value2angle(this[id]))}
+          d=${this._renderArc(this._value2angle(id != 'low' ? this[id] - 0.1 : this[id] + 0.1), this._value2angle(this[id]))}
           vector-effect="non-scaling-stroke"
           tabindex="0"
           @focus=${this.dragStart}
@@ -3862,7 +3921,7 @@ class CustomRoundSlider extends LitElement {
       g.handle {
         stroke-width: var(--round-slider-dash-width, 20);
         stroke: #FFF;
-        stroke-dasharray: 3, 8;
+        stroke-dasharray: 20;
         stroke-linecap: butt;
       }
       .handle:focus {
