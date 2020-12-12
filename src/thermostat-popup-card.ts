@@ -81,7 +81,6 @@ class ThermostatPopupCard extends LitElement {
         }
       }
     }
-
     return html`
       <div class="${fullscreen === true ? 'popup-wrapper':''}">
         <div class="${classMap({[mode]: true})}" style="display:flex;width:100%;height:100%;">
@@ -134,6 +133,12 @@ class ThermostatPopupCard extends LitElement {
 
                 <div id="slider-center">
                   <div class="values">
+                    <div class="value">
+                      ${currentTemp}&#176;
+                    </div>
+                    <div class="setpoint">
+                      ${targetTemp.toFixed(1)}&#176;
+                    </div>
                     <div class="action">
                       ${
                         stateObj.attributes.hvac_action
@@ -154,40 +159,41 @@ class ThermostatPopupCard extends LitElement {
                           : ""
                       }
                     </div>
-                    <div class="value">
-                      ${
-                        !this._setTemp
-                          ? ""
-                          : Array.isArray(this._setTemp)
-                          ? _stepSize === 1
-                            ? svg`
-                                ${this._setTemp[0].toFixed()}&#176; -
-                                ${this._setTemp[1].toFixed()}&#176;
-                                `
-                            : svg`
-                                ${this._setTemp[0].toFixed(1)}&#176; -
-                                ${this._setTemp[1].toFixed(1)}&#176;
-                                `
-                          : _stepSize === 1
-                          ? svg`
-                                ${this._setTemp.toFixed()}&#176;
-                                `
-                          : svg`
-                                ${this._setTemp.toFixed(1)}&#176;
-                                `
-                      }
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
             <div id="modes">
-              ${(stateObj.attributes.hvac_modes || [])
-                .concat()
-                .sort(this._compareClimateHvacModes)
-                .map((modeItem) => this._renderIcon(modeItem, mode))}
+
+            ${this.config.moon_entity
+              ? html`
+            <ha-icon-button
+            class="${this.checkModeActive('moon') ? 'moon active': 'moon'}"
+            @click=${() => {this.modeClick('moon')}}
+            icon="hass:power-sleep"
+            tabindex="0"
+          ></ha-icon-button>
+          ` : ''}
+
+            ${this.config.sun_entity
+              ? html`
+          <ha-icon-button
+          class="${this.checkModeActive('sun') ? 'sun active': 'sun'}"
+          @click=${() => {this.modeClick('sun')}}
+          icon="hass:white-balance-sunny"
+          tabindex="0"
+        ></ha-icon-button>
+              ` : ''}
+
             </div>
-            ${this.settings ? html`<button class="settings-btn ${this.settingsPosition}${fullscreen === true ? ' fullscreen':''}" @click="${() => this._openSettings()}">${this.config.settings.openButton ? this.config.settings.openButton:'Settings'}</button>`:html``}
+            ${this.settings ? html`
+            <ha-icon-button
+              icon="hass:arrow-right"
+              class="moreInfoButton"
+              @click=${this._openSettings}
+            >
+            </ha-icon-button>
+            `:html``}
           </div>
           ${this.settings ? html`
             <div id="settings" class="settings-inner" @click="${e => this._close(e)}">
@@ -208,7 +214,12 @@ class ThermostatPopupCard extends LitElement {
                   --primary-text-color: white !important;"
                 ></more-info-controls>
               `}
-              <button class="settings-btn ${this.settingsPosition}${fullscreen === true ? ' fullscreen':''}" @click="${() => this._closeSettings()}">${this.config.settings.closeButton ? this.config.settings.closeButton:'Close'}</button>
+              <ha-icon-button
+                icon="hass:arrow-left"
+                class="moreInfoButton"
+                @click=${this._closeSettings}
+              >
+              </ha-icon-button>
             </div>
           `:html``}
         </div>
@@ -266,29 +277,27 @@ class ThermostatPopupCard extends LitElement {
     this.shadowRoot.getElementById('popup').classList.remove("off");
   }
 
-  _renderIcon(mode: string, currentMode: string) {
-    if (!this.modeIcons[mode]) {
-      return html``;
-    }
-    return html`
-      <ha-icon-button
-        class="${classMap({ "selected-icon": currentMode === mode })}"
-        .mode="${mode}"
-        .icon="${this.modeIcons[mode]}"
-        @click="${this._handleModeClick}"
-        tabindex="0"
-      ></ha-icon-button>
-    `;
+  checkModeActive(mode: string) {
+    const stateObj  = this.hass.states[this.config.entity];
+    const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
+    if(!entity) return false;
+    const state = this.hass.states[entity];
+    if(!state || !stateObj.attributes.temperature) return false;
+    const res = Number(stateObj.attributes.temperature) == Number(state.state);
+    return res;
   }
 
-  
-  _handleModeClick(e: MouseEvent): void {
-    this.hass!.callService("climate", "set_hvac_mode", {
+  modeClick(mode: string) {
+    if(this.checkModeActive(mode)) return;
+    const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
+    if(!entity) return;
+    const state = this.hass.states[entity];
+
+    this.hass!.callService("climate", "set_temperature", {
       entity_id: this.config!.entity,
-      hvac_mode: (e.currentTarget as any).mode,
+      temperature: Number(state.state),
     });
   }
-
 
 
 
@@ -326,29 +335,17 @@ class ThermostatPopupCard extends LitElement {
     } else {
       this._setTemp = e.detail.value;
     }
+    const element = this.shadowRoot.querySelector(".setpoint") as HTMLElement;
+    element.childNodes[1].textContent = this._setTemp.toFixed(1);
+    //element.innerHTML = `${this._setTemp.toFixed(1)}&#176;`;
   }
 
   _setTemperature(e): void {
     const stateObj = this.hass!.states[this.config!.entity];
-
-    if (e.detail.low) {
-      this.hass!.callService("climate", "set_temperature", {
-        entity_id: this.config!.entity,
-        target_temp_low: e.detail.low,
-        target_temp_high: stateObj.attributes.target_temp_high,
-      });
-    } else if (e.detail.high) {
-      this.hass!.callService("climate", "set_temperature", {
-        entity_id: this.config!.entity,
-        target_temp_low: stateObj.attributes.target_temp_low,
-        target_temp_high: e.detail.high,
-      });
-    } else {
-      this.hass!.callService("climate", "set_temperature", {
-        entity_id: this.config!.entity,
-        temperature: e.detail.value,
-      });
-    }
+    this.hass!.callService("climate", "set_temperature", {
+      entity_id: this.config!.entity,
+      temperature: e.detail.value,
+    });
   }
 
   _compareClimateHvacModes = (mode1, mode2) => this.hvacModeOrdering[mode1] - this.hvacModeOrdering[mode2];
@@ -379,12 +376,14 @@ class ThermostatPopupCard extends LitElement {
             --unknown-color: #bac;
         }
         .popup-wrapper {
-          margin-top:64px;
-          position: absolute;
+          margin-top: 20px;
+          position: relative;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
+          max-width: 100%;
+          overflow: hidden;
         }
         .popup-inner {
           height: 100%;
@@ -393,6 +392,7 @@ class ThermostatPopupCard extends LitElement {
           align-items: center;
           justify-content: center;
           flex-direction: column;
+          margin-top: 0px;
         }
         .popup-inner.off {
           display:none;
@@ -411,28 +411,14 @@ class ThermostatPopupCard extends LitElement {
         #settings.on {
           display:flex;
         }
-        .settings-btn {
-          position:absolute;
-          right:30px;
-          background-color: #7f8082;
-          color: #FFF;
-          border: 0;
-          padding: 5px 20px;
-          border-radius: 10px;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .settings-btn.bottom {
-          bottom:15px;
-        }
-        .settings-btn.top {
-          top: 25px;
-        }
-        .settings-btn.bottom.fullscreen {
-          margin:0;
+        .moreInfoButton {
+          position: fixed;
+          right: 12px;
+          bottom: 12px;
+          color: var(--text-primary-color);
         }
         .fullscreen {
-          margin-top:-64px;
+          margin-top:0px;
         }
         .info {
           display:flex;
@@ -571,24 +557,47 @@ class ThermostatPopupCard extends LitElement {
           height:100%;
           width:100%;
         }
+        .values .value {
+          color:#FFF;
+          font-size:60px;
+          line-height: 60px;
+          margin-top: 30px;
+        }
+        .values .setpoint {
+          color:#FFF;
+          font-size:30px;
+          line-height: 30px;
+          margin-top: 10px;
+        }
         .values .action {
           color:#f4b941;
           font-size:10px;
           text-transform:uppercase;
         }
-        .values .value {
-          color:#FFF;
-          font-size:60px;
-          line-height: 60px;
+        #modes {
+          margin-top: -30px;
+          margin-bottom: 20px;
         }
-        
         #modes > * {
           color: var(--disabled-text-color);
           cursor: pointer;
           display: inline-block;
+          --mdc-icon-size: 28px;
         }
-        #modes .selected-icon {
-          color: var(--mode-color);
+
+        #modes .moon {
+          color: var(--disabled-text-color);
+        }
+
+        #modes .sun {
+          color: var(--disabled-text-color);
+        }
+
+        #modes .moon.active {
+          color: deepskyblue;
+        }
+        #modes .sun.active {
+          color: gold;
         }
         text {
           color: var(--primary-text-color);
@@ -898,7 +907,7 @@ class CustomRoundSlider extends LitElement {
           id=${id}
           class="handle"
           d=${this._renderArc(
-            this._value2angle(id != 'low' ? this[id]-0.35: this[id] + 0.35),
+            this._value2angle(id != 'low' ? this[id]-0.1: this[id] + 0.1),
             this._value2angle(this[id])
           )}
           vector-effect="non-scaling-stroke"
@@ -1024,7 +1033,7 @@ class CustomRoundSlider extends LitElement {
       g.handle {
         stroke-width: var(--round-slider-dash-width, 20);
         stroke: #FFF;
-        stroke-dasharray: 3, 8;
+        stroke-dasharray: 20;
         stroke-linecap: butt;
       }
       .handle:focus {
