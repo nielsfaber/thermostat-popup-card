@@ -165,25 +165,14 @@ class ThermostatPopupCard extends LitElement {
             </div>
             <div id="modes">
 
-            ${this.config.moon_entity
-              ? html`
-            <ha-icon-button
-            class="${this.checkModeActive('moon') ? 'moon active': 'moon'}"
-            @click=${() => {this.modeClick('moon')}}
-            icon="hass:power-sleep"
-            tabindex="0"
-          ></ha-icon-button>
-          ` : ''}
-
-            ${this.config.sun_entity
-              ? html`
-          <ha-icon-button
-          class="${this.checkModeActive('sun') ? 'sun active': 'sun'}"
-          @click=${() => {this.modeClick('sun')}}
-          icon="hass:white-balance-sunny"
-          tabindex="0"
-        ></ha-icon-button>
-              ` : ''}
+            ${this.config.buttons.map(e => html`
+              <ha-icon-button
+              style="color: ${this.checkModeActive(e) ? e.color: 'var(--disabled-text-color)'}"
+              @click=${() => {this.modeClick(e)}}
+              icon="${e.icon}"
+              tabindex="0"
+            ></ha-icon-button>
+            `)}
 
             </div>
             ${this.settings ? html`
@@ -277,26 +266,35 @@ class ThermostatPopupCard extends LitElement {
     this.shadowRoot.getElementById('popup').classList.remove("off");
   }
 
-  checkModeActive(mode: string) {
+  checkModeActive(config: {temperature?: string, hvac_mode?: string}) {
     const stateObj  = this.hass.states[this.config.entity];
-    const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
-    if(!entity) return false;
-    const state = this.hass.states[entity];
-    if(!state || !stateObj.attributes.temperature) return false;
-    const res = Number(stateObj.attributes.temperature) == Number(state.state);
+
+    let res = false;
+    if(stateObj.attributes.hvac_mode && config.hvac_mode) {
+      res = stateObj.attributes.hvac_mode == config.hvac_mode;
+    }
+    else if(stateObj.attributes.temperature && config.temperature) {
+      const entity  = this.hass.states[config.temperature];
+      res = entity.state && Number(stateObj.attributes.temperature) == Number(entity.state);
+    }
+
     return res;
   }
 
-  modeClick(mode: string) {
-    if(this.checkModeActive(mode)) return;
-    const entity = mode == "moon" ? this.config["moon_entity"] : this.config["sun_entity"];
-    if(!entity) return;
-    const state = this.hass.states[entity];
+  modeClick(config: {action: "set_temperature" | "set_hvac_mode", temperature?: string, hvac_mode?: string}) {
+    if(this.checkModeActive(config)) return;
 
-    this.hass!.callService("climate", "set_temperature", {
+    let params: any = {
       entity_id: this.config!.entity,
-      temperature: Number(state.state),
-    });
+    }
+    if(config.temperature) {
+      const entity  = this.hass.states[config.temperature];
+      params = {...params, temperature: Number(entity.state) };
+    }
+    if(config.hvac_mode) {
+      params = {...params, hvac_mode: config.hvac_mode };
+    }
+    this.hass!.callService("climate", config.action, params);
   }
 
 
@@ -583,21 +581,6 @@ class ThermostatPopupCard extends LitElement {
           cursor: pointer;
           display: inline-block;
           --mdc-icon-size: 28px;
-        }
-
-        #modes .moon {
-          color: var(--disabled-text-color);
-        }
-
-        #modes .sun {
-          color: var(--disabled-text-color);
-        }
-
-        #modes .moon.active {
-          color: deepskyblue;
-        }
-        #modes .sun.active {
-          color: gold;
         }
         text {
           color: var(--primary-text-color);
