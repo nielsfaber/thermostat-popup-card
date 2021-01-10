@@ -37,55 +37,55 @@ class ThermostatPopupCard extends LitElement {
       active: {}
     };
   }
-  
+
   constructor() {
     super();
   }
-  
+
   render() {
     var entity = this.config.entity;
     var stateObj = this.hass.states[entity];
-    var icon = this.config.icon ? this.config.icon : stateObj.attributes.icon ? stateObj.attributes.icon: 'mdi:lightbulb';
+    var icon = this.config.icon ? this.config.icon : stateObj.attributes.icon ? stateObj.attributes.icon : 'mdi:lightbulb';
 
     // REAL DATA
     var name = this.config!.name || computeStateName(this.hass!.states[this.config!.entity]);
     var targetTemp = stateObj.attributes.temperature !== null && stateObj.attributes.temperature ? stateObj.attributes.temperature : stateObj.attributes.min_temp;
     var currentTemp = stateObj.attributes.current_temperature
     var mode = stateObj.state in this.modeIcons ? stateObj.state : "unknown-mode";
-    
+
     var _handleSize = 15;
     var _stepSize = this.config.stepSize ? this.config.stepSize : stateObj.attributes.target_temp_step ? stateObj.attributes.target_temp_step : 1;
     var gradient = true;
     var gradientPoints = [
-      {point: 0, color: '#4fdae4'},
-      {point: 10, color: '#2da9d8'},
-      {point: 25, color: '#56b557'},
-      {point: 50, color: '#f4c807'},
-      {point: 70, color: '#faaa00'},
-      {point: 100, color: '#f86618'},
+      { point: 0, color: '#4fdae4' },
+      { point: 10, color: '#2da9d8' },
+      { point: 25, color: '#56b557' },
+      { point: 50, color: '#f4c807' },
+      { point: 70, color: '#faaa00' },
+      { point: 100, color: '#f86618' },
     ];
     var fullscreen = "fullscreen" in this.config ? this.config.fullscreen : true;
-    this.settings = "settings" in this.config? true : false;
-    this.settingsCustomCard = "settingsCard" in this.config? true : false;
+    this.settings = "settings" in this.config ? true : false;
+    this.settingsCustomCard = "settingsCard" in this.config ? true : false;
     this.settingsPosition = "settingsPosition" in this.config ? this.config.settingsPosition : "bottom";
-    if(this.settingsCustomCard && this.config.settingsCard.cardOptions) {
-      if(this.config.settingsCard.cardOptions.entity && this.config.settingsCard.cardOptions.entity == 'this') {
+    if (this.settingsCustomCard && this.config.settingsCard.cardOptions) {
+      if (this.config.settingsCard.cardOptions.entity && this.config.settingsCard.cardOptions.entity == 'this') {
         this.config.settingsCard.cardOptions.entity = entity;
-      } else if(this.config.settingsCard.cardOptions.entity_id && this.config.settingsCard.cardOptions.entity_id == 'this') {
+      } else if (this.config.settingsCard.cardOptions.entity_id && this.config.settingsCard.cardOptions.entity_id == 'this') {
         this.config.settingsCard.cardOptions.entity_id = entity;
-      } else if(this.config.settingsCard.cardOptions.entities) {
-        for(let key in this.config.settingsCard.cardOptions.entities) {
-          if(this.config.settingsCard.cardOptions.entities[key] == 'this') {
+      } else if (this.config.settingsCard.cardOptions.entities) {
+        for (let key in this.config.settingsCard.cardOptions.entities) {
+          if (this.config.settingsCard.cardOptions.entities[key] == 'this') {
             this.config.settingsCard.cardOptions.entities[key] = entity;
           }
         }
       }
     }
     return html`
-      <div class="${fullscreen === true ? 'popup-wrapper':''}">
-        <div class="${classMap({[mode]: true})}" style="display:flex;width:100%;height:100%;">
+      <div class="${fullscreen === true ? 'popup-wrapper' : ''}">
+        <div class="${classMap({ [mode]: true })}" style="display:flex;width:100%;height:100%;">
           <div id="popup" class="popup-inner" @click="${e => this._close(e)}">
-            <div class="info${fullscreen === true ? ' fullscreen':''}">
+            <div class="info${fullscreen === true ? ' fullscreen' : ''}">
               <div class="temp ${mode}">
                 ${currentTemp}&#176;
               </div>
@@ -93,23 +93,23 @@ class ThermostatPopupCard extends LitElement {
                 <div class="name">${name}</div>
                 <div class="action">
                 ${
-                  stateObj.attributes.hvac_action
-                    ? this.hass!.localize(
-                        `state_attributes.climate.hvac_action.${stateObj.attributes.hvac_action}`
-                      )
-                    : this.hass!.localize(`state.climate.${stateObj.state}`)
-                }
+      stateObj.attributes.hvac_action
+        ? this.hass!.localize(
+          `state_attributes.climate.hvac_action.${stateObj.attributes.hvac_action}`
+        )
+        : this.hass!.localize(`state.climate.${stateObj.state}`)
+      }
                 ${
-                  stateObj.attributes.preset_mode &&
-                  stateObj.attributes.preset_mode !== "none"
-                    ? html`
+      stateObj.attributes.preset_mode &&
+        stateObj.attributes.preset_mode !== "none"
+        ? html`
                         -
                         ${this.hass!.localize(
-                          `state_attributes.climate.preset_mode.${stateObj.attributes.preset_mode}`
-                        ) || stateObj.attributes.preset_mode}
+          `state_attributes.climate.preset_mode.${stateObj.attributes.preset_mode}`
+        ) || stateObj.attributes.preset_mode}
                       `
-                    : ""
-                }
+        : ""
+      }
                 ${targetTemp}&#176;</div>
               </div>
             </div>
@@ -141,23 +141,23 @@ class ThermostatPopupCard extends LitElement {
                     </div>
                     <div class="action">
                       ${
-                        stateObj.attributes.hvac_action
-                          ? this.hass!.localize(
-                              `state_attributes.climate.hvac_action.${stateObj.attributes.hvac_action}`
-                            )
-                          : this.hass!.localize(`state.climate.${stateObj.state}`)
-                      }
+      stateObj.attributes.hvac_action
+        ? this.hass!.localize(
+          `state_attributes.climate.hvac_action.${stateObj.attributes.hvac_action}`
+        )
+        : this.hass!.localize(`state.climate.${stateObj.state}`)
+      }
                       ${
-                        stateObj.attributes.preset_mode &&
-                        stateObj.attributes.preset_mode !== "none"
-                          ? html`
+      stateObj.attributes.preset_mode &&
+        stateObj.attributes.preset_mode !== "none"
+        ? html`
                               -
                               ${this.hass!.localize(
-                                `state_attributes.climate.preset_mode.${stateObj.attributes.preset_mode}`
-                              ) || stateObj.attributes.preset_mode}
+          `state_attributes.climate.preset_mode.${stateObj.attributes.preset_mode}`
+        ) || stateObj.attributes.preset_mode}
                             `
-                          : ""
-                      }
+        : ""
+      }
                     </div>
                   </div>
                 </div>
@@ -167,8 +167,8 @@ class ThermostatPopupCard extends LitElement {
 
             ${this.config.buttons.map(e => html`
               <ha-icon-button
-              style="color: ${this.checkModeActive(e) ? e.color: 'var(--disabled-text-color)'}"
-              @click=${() => {this.modeClick(e)}}
+              style="color: ${this.checkModeActive(e) ? e.color : 'var(--paper-grey-500)'}"
+              @click=${() => { this.modeClick(e) }}
               icon="${e.icon}"
               tabindex="0"
             ></ha-icon-button>
@@ -182,14 +182,14 @@ class ThermostatPopupCard extends LitElement {
               @click=${this._openSettings}
             >
             </ha-icon-button>
-            `:html``}
+            `: html``}
           </div>
           ${this.settings ? html`
             <div id="settings" class="settings-inner" @click="${e => this._close(e)}">
               ${this.settingsCustomCard ? html`
                 <card-maker nohass data-card="${this.config.settingsCard.type}" data-options="${JSON.stringify(this.config.settingsCard.cardOptions)}" data-style="${this.config.settingsCard.cardStyle ? this.config.settingsCard.cardStyle : ''}">
                 </card-maker>
-              `:html`
+              `: html`
                   <more-info-controls
                   .dialogElement=${null}
                   .canConfigure=${false}
@@ -210,17 +210,17 @@ class ThermostatPopupCard extends LitElement {
               >
               </ha-icon-button>
             </div>
-          `:html``}
+          `: html``}
         </div>
       </div>
     `;
   }
 
   firstUpdated() {
-    if(this.settings && !this.settingsCustomCard) {
-    const mic = this.shadowRoot.querySelector("more-info-controls").shadowRoot;
-    mic.removeChild(mic.querySelector("app-toolbar"));
-    } else if(this.settings && this.settingsCustomCard) {
+    if (this.settings && !this.settingsCustomCard) {
+      const mic = this.shadowRoot.querySelector("more-info-controls").shadowRoot;
+      mic.removeChild(mic.querySelector("app-toolbar"));
+    } else if (this.settings && this.settingsCustomCard) {
       this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
         var card = {
           type: customCard.dataset.card
@@ -229,22 +229,22 @@ class ThermostatPopupCard extends LitElement {
         customCard.config = card;
 
         let style = "";
-        if(customCard.dataset.style) {
+        if (customCard.dataset.style) {
           style = customCard.dataset.style;
         }
 
-        if(style != "") {
+        if (style != "") {
           let itterations = 0;
           let interval = setInterval(function () {
             let el = customCard.children[0];
-            if(el) {
+            if (el) {
               window.clearInterval(interval);
 
               var styleElement = document.createElement('style');
               styleElement.innerHTML = style;
               el.shadowRoot.appendChild(styleElement);
 
-            } else if (++itterations === 10 ) {
+            } else if (++itterations === 10) {
               window.clearInterval(interval);
             }
           }, 100);
@@ -252,7 +252,7 @@ class ThermostatPopupCard extends LitElement {
       });
     }
   }
-  
+
   updated() {
     this._setTemp = this._getSetTemp(this.hass!.states[this.config!.entity]);
   }
@@ -266,33 +266,33 @@ class ThermostatPopupCard extends LitElement {
     this.shadowRoot.getElementById('popup').classList.remove("off");
   }
 
-  checkModeActive(config: {temperature?: string, hvac_mode?: string}) {
-    const stateObj  = this.hass.states[this.config.entity];
+  checkModeActive(config: { temperature?: string, hvac_mode?: string }) {
+    const stateObj = this.hass.states[this.config.entity];
 
     let res = false;
-    if(stateObj.attributes.hvac_mode && config.hvac_mode) {
-      res = stateObj.attributes.hvac_mode == config.hvac_mode;
+    if (stateObj.attributes.hvac_action && config.hvac_mode) {
+      res = stateObj.attributes.hvac_action == config.hvac_mode;
     }
-    else if(stateObj.attributes.temperature && config.temperature) {
-      const entity  = this.hass.states[config.temperature];
+    else if (stateObj.attributes.temperature && config.temperature) {
+      const entity = this.hass.states[config.temperature];
       res = entity.state && Number(stateObj.attributes.temperature) == Number(entity.state);
     }
 
     return res;
   }
 
-  modeClick(config: {action: "set_temperature" | "set_hvac_mode", temperature?: string, hvac_mode?: string}) {
-    if(this.checkModeActive(config)) return;
+  modeClick(config: { action: "set_temperature" | "set_hvac_mode", temperature?: string, hvac_mode?: string }) {
+    if (this.checkModeActive(config)) return;
 
     let params: any = {
       entity_id: this.config!.entity,
     }
-    if(config.temperature) {
-      const entity  = this.hass.states[config.temperature];
-      params = {...params, temperature: Number(entity.state) };
+    if (config.temperature) {
+      const entity = this.hass.states[config.temperature];
+      params = { ...params, temperature: Number(entity.state) };
     }
-    if(config.hvac_mode) {
-      params = {...params, hvac_mode: config.hvac_mode };
+    if (config.hvac_mode) {
+      params = { ...params, hvac_mode: config.hvac_mode };
     }
     this.hass!.callService("climate", config.action, params);
   }
@@ -318,7 +318,7 @@ class ThermostatPopupCard extends LitElement {
   }
 
   _close(event) {
-    if(event && (event.target.className.includes('popup-inner') || event.target.className.includes('settings-inner'))) {
+    if (event && (event.target.className.includes('popup-inner') || event.target.className.includes('settings-inner'))) {
       closePopUp();
     }
   }
@@ -347,7 +347,7 @@ class ThermostatPopupCard extends LitElement {
   }
 
   _compareClimateHvacModes = (mode1, mode2) => this.hvacModeOrdering[mode1] - this.hvacModeOrdering[mode2];
-  
+
   setConfig(config) {
     if (!config.entity) {
       throw new Error("You need to define an entity");
@@ -358,7 +358,7 @@ class ThermostatPopupCard extends LitElement {
   getCardSize() {
     return 1;
   }
-  
+
   static get styles() {
     return css`
         :host {
@@ -614,22 +614,22 @@ class CustomRoundSlider extends LitElement {
 
   static get properties() {
     return {
-      value: {type: Number},
-      high: {type: Number},
-      low: {type: Number},
-      min: {type: Number},
-      max: {type: Number},
-      step: {type: Number},
-      startAngle: {type: Number},
-      arcLength: {type: Number},
-      handleSize: {type: Number},
-      handleZoom: {type: Number},
-      disabled: {type: Boolean},
-      dragging: {type: Boolean, reflect: true},
-      rtl: {type: Boolean},
-      _scale: {type: Number},
-      gradient: {type: Boolean},
-      gradientPoints: {type: Array}
+      value: { type: Number },
+      high: { type: Number },
+      low: { type: Number },
+      min: { type: Number },
+      max: { type: Number },
+      step: { type: Number },
+      startAngle: { type: Number },
+      arcLength: { type: Number },
+      handleSize: { type: Number },
+      handleZoom: { type: Number },
+      disabled: { type: Boolean },
+      dragging: { type: Boolean, reflect: true },
+      rtl: { type: Boolean },
+      _scale: { type: Number },
+      gradient: { type: Boolean },
+      gradientPoints: { type: Array }
     }
   }
 
@@ -651,11 +651,11 @@ class CustomRoundSlider extends LitElement {
   }
 
   get _start() {
-    return this.startAngle*Math.PI/180;
+    return this.startAngle * Math.PI / 180;
   }
   get _len() {
     // Things get weird if length is more than a complete turn
-    return Math.min(this.arcLength*Math.PI/180, 2*Math.PI-0.01);
+    return Math.min(this.arcLength * Math.PI / 180, 2 * Math.PI - 0.01);
   }
   get _end() {
     return this._start + this._len;
@@ -663,37 +663,37 @@ class CustomRoundSlider extends LitElement {
 
   get _enabled() {
     // If handle is disabled
-    if(this.disabled) return false;
-    if(this.value == null && (this.high == null || this.low == null)) return false;
+    if (this.disabled) return false;
+    if (this.value == null && (this.high == null || this.low == null)) return false;
 
-    if(this.value != null && (this.value > this.max || this.value < this.min)) return false;
-    if(this.high != null && (this.high > this.max || this.high < this.min)) return false;
-    if(this.low != null && (this.low > this.max || this.low < this.min)) return false;
+    if (this.value != null && (this.value > this.max || this.value < this.min)) return false;
+    if (this.high != null && (this.high > this.max || this.high < this.min)) return false;
+    if (this.low != null && (this.low > this.max || this.low < this.min)) return false;
     return true;
   }
 
   _angleInside(angle) {
     // Check if an angle is on the arc
-    let a = (this.startAngle + this.arcLength/2 - angle + 180 + 360) % 360 - 180;
-    return (a < this.arcLength/2 && a > -this.arcLength/2);
+    let a = (this.startAngle + this.arcLength / 2 - angle + 180 + 360) % 360 - 180;
+    return (a < this.arcLength / 2 && a > -this.arcLength / 2);
   }
   _angle2xy(angle) {
-    if(this.rtl)
-      return {x: -Math.cos(angle), y: Math.sin(angle)}
-    return {x: Math.cos(angle), y: Math.sin(angle)}
+    if (this.rtl)
+      return { x: -Math.cos(angle), y: Math.sin(angle) }
+    return { x: Math.cos(angle), y: Math.sin(angle) }
   }
-  _xy2angle(x,y) {
-    if(this.rtl)
+  _xy2angle(x, y) {
+    if (this.rtl)
       x = -x;
-    return (Math.atan2(y,x) - this._start + 2*Math.PI) % (2*Math.PI);
+    return (Math.atan2(y, x) - this._start + 2 * Math.PI) % (2 * Math.PI);
   }
 
   _value2angle(value) {
-    const fraction = (value - this.min)/(this.max - this.min);
+    const fraction = (value - this.min) / (this.max - this.min);
     return this._start + fraction * this._len;
   }
   _angle2value(angle) {
-    return Math.round((angle/this._len*(this.max - this.min) + this.min)/this.step)*this.step;
+    return Math.round((angle / this._len * (this.max - this.min) + this.min) / this.step) * this.step;
   }
 
 
@@ -703,25 +703,25 @@ class CustomRoundSlider extends LitElement {
     const end = this._angle2xy(this._end);
 
     let up = 1;
-    if(!this._angleInside(270))
-      up =  Math.max(-start.y, -end.y);
+    if (!this._angleInside(270))
+      up = Math.max(-start.y, -end.y);
 
     let down = 1;
-    if(!this._angleInside(90))
+    if (!this._angleInside(90))
       down = Math.max(start.y, end.y);
 
     let left = 1;
-    if(!this._angleInside(180))
+    if (!this._angleInside(180))
       left = Math.max(-start.x, -end.x);
 
     let right = 1;
-    if(!this._angleInside(0))
+    if (!this._angleInside(0))
       right = Math.max(start.x, end.x);
 
     return {
       up, down, left, right,
-      height: up+down,
-      width: left+right,
+      height: up + down,
+      width: left + right,
     };
   }
 
@@ -729,30 +729,30 @@ class CustomRoundSlider extends LitElement {
     let handle = ev.target;
 
     // Avoid double events mouseDown->focus
-    if(this._rotation && this._rotation.type !== "focus") {
+    if (this._rotation && this._rotation.type !== "focus") {
       return;
     }
 
     // If an invisible handle was clicked, switch to the visible counterpart
-    if(handle.classList.contains("overflow")) {
+    if (handle.classList.contains("overflow")) {
       handle = handle.nextElementSibling
     }
-      
 
-    if(!handle.classList.contains("handle")) return;
-    handle.setAttribute('stroke-width', (this.handleSize*this._scale) + 5 + this.handleZoom);
+
+    if (!handle.classList.contains("handle")) return;
+    handle.setAttribute('stroke-width', (this.handleSize * this._scale) + 5 + this.handleZoom);
 
     const min = handle.id === "high" ? this.low : this.min;
     const max = handle.id === "low" ? this.high : this.max;
-    this._rotation = { handle, min, max, start: this[handle.id], type: ev.type};
+    this._rotation = { handle, min, max, start: this[handle.id], type: ev.type };
     this.dragging = true;
   }
 
   dragEnd() {
-    if(!this._rotation) return;
+    if (!this._rotation) return;
 
     const handle = this._rotation.handle;
-    handle.setAttribute('stroke-width', (this.handleSize*this._scale) + 5);
+    handle.setAttribute('stroke-width', (this.handleSize * this._scale) + 5);
 
     this._rotation = false;
     this.dragging = false;
@@ -761,7 +761,7 @@ class CustomRoundSlider extends LitElement {
 
     let event = new CustomEvent('value-changed', {
       detail: {
-        [handle.id] : this[handle.id],
+        [handle.id]: this[handle.id],
       }
     });
     this.dispatchEvent(event);
@@ -770,15 +770,15 @@ class CustomRoundSlider extends LitElement {
     // close to the top end.  Otherwise if would be unclickable, and the high
     // handle locked by the low.  Calcualtion is done in the dragEnd handler to
     // avoid "z fighting" while dragging.
-    if(this.low && this.low >= 0.99*this.max)
+    if (this.low && this.low >= 0.99 * this.max)
       this._reverseOrder = true;
     else
       this._reverseOrder = false;
   }
 
   drag(ev) {
-    if(!this._rotation) return;
-    if(this._rotation.type === "focus") return;
+    if (!this._rotation) return;
+    if (this._rotation.type === "focus") return;
 
     ev.preventDefault();
 
@@ -787,38 +787,38 @@ class CustomRoundSlider extends LitElement {
 
     const rect = this.shadowRoot.querySelector("svg").getBoundingClientRect();
     const boundaries = this._boundaries;
-    const x = mouseX - (rect.left + boundaries.left*rect.width/boundaries.width);
-    const y = mouseY - (rect.top + boundaries.up*rect.height/boundaries.height);
+    const x = mouseX - (rect.left + boundaries.left * rect.width / boundaries.width);
+    const y = mouseY - (rect.top + boundaries.up * rect.height / boundaries.height);
 
-    const angle = this._xy2angle(x,y);
+    const angle = this._xy2angle(x, y);
     const pos = this._angle2value(angle);
     this._dragpos(pos);
   }
 
   _dragpos(pos) {
-    if(pos < this._rotation.min || pos > this._rotation.max) return;
+    if (pos < this._rotation.min || pos > this._rotation.max) return;
 
     const handle = this._rotation.handle;
     this[handle.id] = pos;
 
     let event = new CustomEvent('value-changing', {
       detail: {
-        [handle.id] : pos,
+        [handle.id]: pos,
       }
     });
     this.dispatchEvent(event);
   }
 
   _keyStep(ev) {
-    if(!this._rotation) return;
+    if (!this._rotation) return;
     const handle = this._rotation.handle;
-    if(ev.key === "ArrowLeft")
-      if(this.rtl)
+    if (ev.key === "ArrowLeft")
+      if (this.rtl)
         this._dragpos(this[handle.id] + this.step);
       else
         this._dragpos(this[handle.id] - this.step);
-    if(ev.key === "ArrowRight")
-      if(this.rtl)
+    if (ev.key === "ArrowRight")
+      if (this.rtl)
         this._dragpos(this[handle.id] - this.step);
       else
         this._dragpos(this[handle.id] + this.step);
@@ -826,9 +826,9 @@ class CustomRoundSlider extends LitElement {
 
   firstUpdated() {
     document.addEventListener('mouseup', this.dragEnd.bind(this));
-    document.addEventListener('touchend', this.dragEnd.bind(this), {passive: false});
+    document.addEventListener('touchend', this.dragEnd.bind(this), { passive: false });
     document.addEventListener('mousemove', this.drag.bind(this));
-    document.addEventListener('touchmove', this.drag.bind(this), {passive: false});
+    document.addEventListener('touchmove', this.drag.bind(this), { passive: false });
     document.addEventListener('keydown', this._keyStep.bind(this));
   }
 
@@ -836,27 +836,27 @@ class CustomRoundSlider extends LitElement {
 
     // Workaround for vector-effect not working in IE and pre-Chromium Edge
     // That's also why the _scale property exists
-    if(this.shadowRoot.querySelector("svg")
-    && this.shadowRoot.querySelector("svg").style.vectorEffect !== undefined)
+    if (this.shadowRoot.querySelector("svg")
+      && this.shadowRoot.querySelector("svg").style.vectorEffect !== undefined)
       return;
-    if(changedProperties.has("_scale") && this._scale != 1) {
+    if (changedProperties.has("_scale") && this._scale != 1) {
       this.shadowRoot.querySelector("svg").querySelectorAll("path").forEach((e) => {
-        if(e.getAttribute('stroke-width')) return;
+        if (e.getAttribute('stroke-width')) return;
         const orig = parseFloat(getComputedStyle(e).getPropertyValue('stroke-width'));
-        e.style.strokeWidth = `${orig*this._scale}px`;
+        e.style.strokeWidth = `${orig * this._scale}px`;
       });
     }
     const rect = this.shadowRoot.querySelector("svg").getBoundingClientRect();
     const scale = Math.max(rect.width, rect.height);
-    this._scale = 2/scale;
+    this._scale = 2 / scale;
   }
 
 
 
   _renderArc(start, end) {
-    const diff = end-start;
+    const diff = end - start;
     start = this._angle2xy(start);
-    end = this._angle2xy(end+0.001); // Safari doesn't like arcs with no length
+    end = this._angle2xy(end + 0.001); // Safari doesn't like arcs with no length
     return `
       M ${start.x} ${start.y}
       A 1 1,
@@ -879,20 +879,20 @@ class CustomRoundSlider extends LitElement {
           class="overflow"
           d="
           M ${pos.x} ${pos.y}
-          L ${pos.x+0.001} ${pos.y+0.001}
+          L ${pos.x + 0.001} ${pos.y + 0.001}
           "
           vector-effect="non-scaling-stroke"
           stroke="rgba(0,0,0,0)"
           stroke-linecap="round"
-          stroke-width="${4*this.handleSize*this._scale}"
+          stroke-width="${4 * this.handleSize * this._scale}"
           />
         <path
           id=${id}
           class="handle"
           d=${this._renderArc(
-            this._value2angle(id != 'low' ? this[id]-0.1: this[id] + 0.1),
-            this._value2angle(this[id])
-          )}
+      this._value2angle(id != 'low' ? this[id] - 0.1 : this[id] + 0.1),
+      this._value2angle(this[id])
+    )}
           vector-effect="non-scaling-stroke"
           tabindex="0"
           @focus=${this.dragStart}
@@ -928,54 +928,54 @@ class CustomRoundSlider extends LitElement {
             vector-effect="non-scaling-stroke"
           />
           ${ this._enabled
-            ? svg`
+        ? svg`
               <path
                 class="block"
                 vector-effect="non-scaling-stroke"
                 d=${this._renderArc(
-                  this._start,
-                  this._value2angle(this.low != null ? this.low : this.min)
-                )}
+          this._start,
+          this._value2angle(this.low != null ? this.low : this.min)
+        )}
               />
               <path
                 class="block"
                 vector-effect="non-scaling-stroke"
                 d=${this._renderArc(
-                  this._value2angle(this.high != null ? this.high : this.value),
-                  this._end
-                )}
+          this._value2angle(this.high != null ? this.high : this.value),
+          this._end
+        )}
               />
               <path
                 class="block-dash"
                 stroke-dasharray="2, 25"
                 vector-effect="non-scaling-stroke"
                 d=${this._renderArc(
-                  this._start,
-                  this._end
-                )}
+          this._start,
+          this._end
+        )}
               />
               <path
                 class="bar"
                 vector-effect="non-scaling-stroke"
                 d=${this._renderArc(
-                  this._value2angle(this.low != null ? this.low : this.min),
-                  this._value2angle(this.high != null ? this.high : this.value)
-                )}
+          this._value2angle(this.low != null ? this.low : this.min),
+          this._value2angle(this.high != null ? this.high : this.value)
+        )}
               />
               
               `
-            : ``
-          }
+        : ``
+      }
         </g>
         <g class="handles">
         ${ this._enabled
-          ? this.low != null
-              ? this._reverseOrder
-                ? html`${this._renderHandle("high")} ${this._renderHandle("low")}`
-                : html`${this._renderHandle("low")} ${this._renderHandle("high")}`
-              : html`${this._renderHandle("value")}`
-          : ``
-        }
+        ? this.low != null
+          ? this._reverseOrder
+            ? html`${this._renderHandle("high")} ${this._renderHandle("low")}`
+            : html`${this._renderHandle("low")} ${this._renderHandle("high")}`
+          : html`${this._renderHandle("value")}`
+        : ``
+      }
         </g>
         
       </svg>

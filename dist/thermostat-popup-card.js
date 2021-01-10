@@ -3160,7 +3160,7 @@ class ThermostatPopupCard extends LitElement {
 
             ${this.config.buttons.map(e => html `
               <ha-icon-button
-              style="color: ${this.checkModeActive(e) ? e.color : 'var(--disabled-text-color)'}"
+              style="color: ${this.checkModeActive(e) ? e.color : 'var(--paper-grey-500)'}"
               @click=${() => { this.modeClick(e); }}
               icon="${e.icon}"
               tabindex="0"
@@ -3256,8 +3256,8 @@ class ThermostatPopupCard extends LitElement {
     checkModeActive(config) {
         const stateObj = this.hass.states[this.config.entity];
         let res = false;
-        if (stateObj.attributes.hvac_mode && config.hvac_mode) {
-            res = stateObj.attributes.hvac_mode == config.hvac_mode;
+        if (stateObj.attributes.hvac_action && config.hvac_mode) {
+            res = stateObj.attributes.hvac_action == config.hvac_mode;
         }
         else if (stateObj.attributes.temperature && config.temperature) {
             const entity = this.hass.states[config.temperature];
